@@ -1,0 +1,6 @@
+Create a component that will 
+ - dynamically render a list of page headings (h3 should be nested in h2)
+ - Clicking on heading should scroll to that heading in the main view 
+ - Highlight which heading you are currently viewing.
+
+For UI refer - toc.gif
