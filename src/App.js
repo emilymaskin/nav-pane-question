@@ -1,8 +1,10 @@
 import "./styles.css";
 import { useRef, useEffect, useState } from "react";
+import { debounce } from "debounce";
 
 const DummyText =
   "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+
 export default function App() {
   const mainRef = useRef();
   const [headers, setHeaders] = useState([]);
@@ -19,7 +21,7 @@ export default function App() {
       if (node.tagName === "H2") {
         headerObj = { H2: { node: null, children: [] } };
         headerObj.H2.node = node;
-      } else if (node.tagName === "H3") {
+      } else {
         headerObj.H2.children.push(node);
       }
       if (
@@ -38,7 +40,6 @@ export default function App() {
       );
 
       const nextEl = scrolledPastEls.pop();
-
       if (nextEl) {
         setCurrentHeader(nextEl.innerText);
       }
@@ -46,21 +47,41 @@ export default function App() {
 
     onScroll();
 
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", debounce(onScroll, 10));
 
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollToHeader = (text) => {
-    const header = Array.from([...mainRef.current.children]).find(
-      (node) => node.innerText === text
-    );
-    header.scrollIntoView({ behavior: "smooth" });
-  };
+  const NavLink = ({ text, children }) => {
+    const scrollToHeader = () => {
+      const header = Array.from([...mainRef.current.children]).find(
+        (node) => node.innerText === text
+      );
+      header.scrollIntoView({ behavior: "smooth" });
+    };
 
-  const onClick = (text) => {
-    scrollToHeader(text);
-    setCurrentHeader(text);
+    const onClick = () => {
+      scrollToHeader();
+      setCurrentHeader(text);
+    };
+
+    return (
+      <li>
+        <span
+          className={currentHeader === text ? "current" : ""}
+          onClick={onClick}
+        >
+          {text}
+        </span>
+        {children ? (
+          <ul>
+            {children.map((child) => (
+              <NavLink key={child.innerText} text={child.innerText} />
+            ))}
+          </ul>
+        ) : null}
+      </li>
+    );
   };
 
   return (
@@ -85,32 +106,11 @@ export default function App() {
       <nav aria-label="Table of contents">
         <ul>
           {headers.map((header) => (
-            <li key={header.H2.node.innerText}>
-              <span
-                className={
-                  currentHeader === header.H2.node.innerText ? "current" : ""
-                }
-                onClick={() => onClick(header.H2.node.innerText)}
-              >
-                {header.H2.node.innerText}
-              </span>
-              {header.H2.children.length ? (
-                <ul>
-                  {header.H2.children.map((child) => (
-                    <li key={child.innerText}>
-                      <span
-                        className={
-                          currentHeader === child.innerText ? "current" : ""
-                        }
-                        onClick={() => onClick(child.innerText)}
-                      >
-                        {child.innerText}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </li>
+            <NavLink
+              key={header.H2.node.innerText}
+              text={header.H2.node.innerText}
+              children={header.H2.children}
+            />
           ))}
         </ul>
       </nav>
